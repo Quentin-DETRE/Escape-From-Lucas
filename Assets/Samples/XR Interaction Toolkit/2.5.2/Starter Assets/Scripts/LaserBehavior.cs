@@ -1,48 +1,43 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Net;
 using UnityEngine;
-using UnityEngine.InputSystem.HID;
 
 public class LaserBehavior : MonoBehaviour
 {
-    [SerializeField] private string notCuttableTag = "NotCuttable";
+    public float maxLaserDistance = 100f;
+    public LayerMask laserCollidableLayers; // Set this in the inspector to the layers the laser should collide with
+
     private LineRenderer lineRenderer;
-    private BoxCollider boxCollider;
-    private float LineLength;
+    private BoxCollider boxCollider; // Reference to the BoxCollider
 
     void Start()
     {
         lineRenderer = GetComponent<LineRenderer>();
-        boxCollider = GetComponent<BoxCollider>();
-        LineLength = lineRenderer.GetPosition(lineRenderer.positionCount - 1).z;
+        boxCollider = GetComponent<BoxCollider>(); // Get the BoxCollider component
+        AdjustLaser(maxLaserDistance);
     }
 
-    void OnTriggerStay(Collider other)
+    void Update()
     {
-        if (!other.CompareTag(notCuttableTag))
+        RaycastHit hit;
+
+        if (Physics.Raycast(transform.position, transform.forward, out hit, maxLaserDistance, laserCollidableLayers))
         {
-
-            float distance = Mathf.Abs(other.transform.position.z - transform.position.z);
-
-            AdjustLineRendererSize(distance);
+            AdjustLaser(hit.distance * 10);
+        }
+        else
+        {
+            AdjustLaser(maxLaserDistance);
         }
     }
 
-    void OnTriggerExit(Collider other)
+    void AdjustLaser(float distance)
     {
-        if (!other.CompareTag(notCuttableTag))
-        {
-            lineRenderer.SetPosition(1, new Vector3(0, 0, LineLength));
-            boxCollider.size = new Vector3(0.1f, 0.1f, LineLength);
-            boxCollider.center = new Vector3(boxCollider.center.x, boxCollider.center.y, LineLength / 2f);
-        }
-    }
+        lineRenderer.SetPosition(1, new Vector3(0, 0, distance));
 
-    void AdjustLineRendererSize(float distance)
-    {
-        lineRenderer.SetPosition(1, new Vector3(0, 0, distance * 9.1f));
-        boxCollider.size = new Vector3(0.1f, 0.1f, distance * 9.5f);
-        boxCollider.center = new Vector3(boxCollider.center.x, boxCollider.center.y, distance * 4.7f);
+        // Assuming the collider's size.x is the width you want to adjust
+        // The size is set to distance * 10 as per your request
+        boxCollider.size = new Vector3(boxCollider.size.x, boxCollider.size.y, distance);
+
+        // You might need to adjust the collider's center if the pivot is at one end of the laser
+        boxCollider.center = new Vector3(boxCollider.center.x, boxCollider.center.y, distance /2);
     }
 }
